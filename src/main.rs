@@ -1,8 +1,9 @@
 extern crate clap;
 
 use clap::{Arg, App, ArgGroup};
-use chrono::prelude::*;
+use chrono::{NaiveDate, Datelike, Local};
 use teevee::{TVShow, Episode};
+use teevee::parsing;
 
 fn main() {
     // Extract the version:
@@ -39,39 +40,46 @@ fn main() {
             .short("t")
             .long("titles")
             .help("Instructs to show the episode titles"))
-            .arg(Arg::with_name("verbose")
+        .arg(Arg::with_name("verbose")
             .short("v")
             .long("verbose")
             .help("Prints verbose output"))
-            .group(ArgGroup::with_name("start_past")
-            .args(&vec!["start", "past"])
-            .required(true))
+        .group(ArgGroup::with_name("start_past")
+                .args(&vec!["start", "past"]))
         .get_matches();
 
     // Get the end date if supplied. Otherwise, it is set to the current date:
-    let end_date = if let Some(date) = matches.value_of("end") {
-        NaiveDate::parse_from_str(date, "%Y-%m-%d").expect("The end date must be specified in the
-            format [YEAR]-[MONTH]-[DAY].")
-    } else {
-        let today = Local::today();
-        NaiveDate::parse_from_str(&format!("{}-{}-{}", today.year(), today.month(), today.day()),
-            "%Y-%m-%d").unwrap()
-    };
+    let today = Local::today();
+    let mut end_date = NaiveDate::from_ymd(today.year(), today.month(), today.day());
+    if let Some(date) = matches.value_of("end") {
+        match NaiveDate::parse_from_str(date, "%Y-%m-%d") {
+            Ok(provided_date) => end_date = provided_date,
+            Err(_) => {
+                println!("Error: The end date must be specified in the format [YEAR]-[MONTH]-[DAY].");
+                return
+            }
+        };
+    }
     println!("Value for end date: {}", end_date);
     // Get the start date:
-    let start_date = match matches.value_of("start") {
-        Some(date) => NaiveDate::parse_from_str(date, "%Y-%m-%d").expect("The start date must be
-            specified in the format [YEAR]-[MONTH]-[DAY]."),
-        _ => match matches.value_of("start") {
-            Some(past) => NaiveDate::parse_from_str(past, "%Y-%m-%d").expect("The interval must
-                be specified in the format [NUMBER] [d(ays) | m(onths) | y(ears)]"),
-            _ => {
-                // This case cannot occur because either --start or --past must be provided:
-                let today = Local::today();
-                NaiveDate::parse_from_str(&format!("{}-{}-{}", today.year(), today.month(),
-                today.day()), "%Y-%m-%d").unwrap()
+    let mut start_date = NaiveDate::from_ymd(today.year(), today.month(), today.day());
+    if let Some(date) = matches.value_of("start") {
+        match NaiveDate::parse_from_str(date, "%Y-%m-%d") {
+            Ok(provided_date) => start_date = provided_date,
+            Err(_) => {
+                println!("Error: The start date must be specified in the format [YEAR]-[MONTH]-[DAY].");
+                return
             }
-        }
-    };
+        };
+    }
+    if let Some(years_months_days) = matches.value_of("past") {
+        match parsing::parse_subtract_from_date(years_months_days, end_date) {
+            Ok(date) => start_date = date,
+            Err(_) => {
+                println!("Error: The interval must be specified in the format [NUMBER] [d(ays) | m(onths) | y(ears)].");
+                return
+            }
+        };
+    }
     println!("Value for start date: {}", start_date);
 }
