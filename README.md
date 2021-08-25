@@ -51,10 +51,10 @@ If no end date is provided, the end date is set to the current day.
 A different end date can be provided in the form `--end [YEAR]-[MONTH]-[DAY]`,
 e.g., `--end 2020-04-23`.
 
-On the contrary, a starting date for the search *must* be provided, either in
-the form of a starting date in the form `--start [YEAR]-[MONTH]-[DAY]` or
+If no start date is provided, the start date is set to the current day.
+A start date can be provided in the form `--start [YEAR]-[MONTH]-[DAY]` or
 as a difference to the end date in the form `--past [X][days | months |  years]`,
-e.g., `--past 9days` or `--past 19months`.
+e.g., `--past 9days` or `--past 19months`. The use of of multiple time units
+is allowed, e.g., `--past "1month 2days"`
 It is further permissible to use `d`, `m`, and `y` for days, months, and years,
 respectively.
-Note that a starting date or interval must be provided.
